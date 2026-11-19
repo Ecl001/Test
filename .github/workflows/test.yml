@@ -24,19 +24,10 @@ jobs:
           mkdir -p parts
           split -b 100M -d -a 3 file.obb parts/part_
 
-      - name: Create GitHub Release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh release create drive-download \
-            --title "Drive Download" \
-            --notes "Split files (100MB each)" \
-            --target "$GITHUB_SHA"
-
-      - name: Upload each part
+      - name: Upload each part to existing Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           for file in parts/*; do
-            gh release upload drive-download "$file"
+            gh release upload sols "$file"
           done
