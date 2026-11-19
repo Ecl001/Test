@@ -1,18 +1,42 @@
-name: Download Drive File
+
+name: Download, Split and Release
 
 on:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   download:
     runs-on: ubuntu-latest
+
     steps:
       - name: Install gdown
         run: pip install -U gdown
 
       - name: Download
         run: |
-          gdown "https://drive.google.com/uc?id=1trA4aQl-g3EBxOhA7Y_aAR_mQEIUjRJx" -O solstice.obb
+          gdown "https://drive.google.com/uc?id=1trA4aQl-g3EBxOhA7Y_aAR_mQEIUjRJx" -O file.obb
 
-      - name: Check
-        run: ls -lh solstice.obb
+      - name: Split into 100MB parts
+        run: |
+          mkdir -p parts
+          split -b 100M -d -a 3 file.obb parts/part_
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create drive-download \
+            --title "Drive Download" \
+            --notes "Split files (100MB each)" \
+            --target "$GITHUB_SHA"
+
+      - name: Upload each part
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for file in parts/*; do
+            gh release upload drive-download "$file"
+          done
